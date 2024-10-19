@@ -16,7 +16,7 @@ use adafruit_feather_rp2040::{
     },
     Pins, XOSC_CRYSTAL_FREQ,
 };
-use core::iter::once;
+use core::iter::repeat_n;
 use embedded_hal::delay::DelayNs;
 use panic_halt as _;
 use smart_leds::{brightness, SmartLedsWrite, RGB8};
@@ -53,7 +53,7 @@ fn main() -> ! {
     let (mut pio, sm0, _, _, _) = pac.PIO0.split(&mut pac.RESETS);
     let mut ws = Ws2812::new(
         // The onboard NeoPixel is attached to GPIO pin #16 on the Feather RP2040.
-        pins.neopixel.into_function(),
+        pins.d6.into_function(),
         &mut pio,
         sm0,
         clocks.peripheral_clock.freq(),
@@ -63,10 +63,12 @@ fn main() -> ! {
     // Infinite colour wheel loop
     let mut n: u8 = 128;
     let mut timer = timer; // rebind to force a copy of the timer
+    let mut leds: [u8; 9] = [0, 10, 20, 30, 40, 50, 60, 70, 80];
     loop {
-        ws.write(brightness(once(wheel(n)), 32)).unwrap();
-        n = n.wrapping_add(1);
-
+        ws.write(brightness(leds.iter().map(|led| wheel(*led)), 32)).unwrap();
+        for i in 0..leds.len() {
+            leds[i] = leds[i].wrapping_add(1);
+        }
         timer.delay_ms(25);
     }
 }
